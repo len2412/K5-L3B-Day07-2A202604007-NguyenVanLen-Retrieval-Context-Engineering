@@ -43,7 +43,8 @@ def run_agent(question: str, controller: Controller, retriever: Retriever, *,
     chunks: dict[str, dict[str, Any]] = {}
     candidates: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
-    for _ in range(max_searches + 1):
+    # Allow one controller turn to repair a citation-format mistake.
+    for _ in range(max_searches + 2):
         action = controller.decide(question, history)
         if action.get('action') == 'search':
             if sum(e['event'] == 'search' for e in events) >= max_searches:
@@ -54,7 +55,10 @@ def run_agent(question: str, controller: Controller, retriever: Retriever, *,
             results = retriever.search(query, filters=filters, top_k=top_k)
             if len(results) > top_k or len({r['id'] for r in results}) != len(results):
                 raise ValueError('retriever phải trả tối đa top_k chunk ID duy nhất')
-            candidates.extend(results)
+            # Later searches are refinements; keep their hits first so early,
+            # weak results do not crowd relevant evidence out of a tight budget.
+            newer_ids = {r['id'] for r in results}
+            candidates = list(results) + [c for c in candidates if c['id'] not in newer_ids]
             context, ids = pack_context(candidates, budget=budget)
             chunks = {c['id']: c for c in candidates if c['id'] in ids}
             events.append({'event': 'search', 'query': query, 'filter': filters, 'results': results,
@@ -66,10 +70,30 @@ def run_agent(question: str, controller: Controller, retriever: Retriever, *,
             answer, citations = action.get('answer'), action.get('citations')
             if not isinstance(answer, str) or not isinstance(citations, list) or any(not isinstance(i, str) for i in citations):
                 raise ValueError('answer/citations không hợp lệ')
-            valid = bool(answer.strip() and citations and all(i in chunks and f'[{i}]' in answer for i in citations))
+            if not answer.strip() and not citations:
+                return {'status': 'abstain', 'answer': 'Không đủ bằng chứng để trả lời.',
+                        'citations': [], 'events': events + [{'event': 'abstain_insufficient_evidence'}]}
+            valid_ids = bool(citations) and all(i in chunks for i in citations)
+            # The structured citation list is authoritative if its IDs are
+            # valid; restore inline markers when the model omitted their syntax.
+            if answer.strip() and valid_ids:
+                for citation in citations:
+                    if f'[{citation}]' not in answer:
+                        answer = f"{answer.rstrip()} [{citation}]"
+            valid = bool(answer.strip() and valid_ids)
             if valid:
                 return {'status': 'answered', 'answer': answer, 'citations': citations, 'events': events + [{'event': 'answer'}]}
-            return {'status': 'abstain', 'answer': 'Không đủ bằng chứng để trả lời.', 'citations': [], 'events': events + [{'event': 'invalid_or_missing_citations'}]}
+            events.append({'event': 'invalid_or_missing_citations',
+                           'proposed_citations': citations,
+                           'context_ids': list(chunks)})
+            history = history + [{
+                'validation_feedback': (
+                    'Your answer was not accepted. Use only these available IDs in both '
+                    'the citations array and inline [ID] markers: ' + ', '.join(chunks)
+                    + '. If none supports the requested fact, search again if allowed; '
+                    'otherwise return an empty answer and empty citations.'
+                )
+            }]
         else:
             raise ValueError('action phải là search hoặc answer')
     return {'status': 'abstain', 'answer': 'Không đủ bằng chứng để trả lời.', 'citations': [], 'events': events}
