@@ -36,19 +36,28 @@ def validate(chunks, questions):
         ids.add(q['id'])
         if q.get('split') not in ('dev', 'test') or not isinstance(q.get('question'), str) or not q['question'].strip():
             raise ValueError(f"question {q['id']}: split hoặc question không hợp lệ")
-        if not isinstance(q.get('expected_answer'), str) or not q['expected_answer'].strip():
-            raise ValueError(f"question {q['id']}: expected_answer phải là chuỗi không rỗng")
-        if not isinstance(q.get('gold'), list) or not q['gold']:
-            raise ValueError(f"question {q['id']}: gold phải là danh sách không rỗng")
-        for g in q['gold']:
-            if not all(key in g and g[key] is not None for key in ('source_id', 'page', 'evidence')) or not isinstance(g['evidence'], str) or not g['evidence']:
-                raise ValueError(f"question {q['id']}: gold không hợp lệ")
-            if not any(hit(c, [g]) for c in chunks):
-                raise ValueError(f"question {q['id']}: gold không nằm trọn trong chunk đúng nguồn/trang")
+        answerable = q.get('answerable', True)
+        if not isinstance(answerable, bool):
+            raise ValueError(f"question {q['id']}: answerable phải là boolean")
+        if answerable:
+            if not isinstance(q.get('expected_answer'), str) or not q['expected_answer'].strip():
+                raise ValueError(f"question {q['id']}: expected_answer phải là chuỗi không rỗng")
+            if not isinstance(q.get('gold'), list) or not q['gold']:
+                raise ValueError(f"question {q['id']}: gold phải là danh sách không rỗng")
+            for g in q['gold']:
+                if not all(key in g and g[key] is not None for key in ('source_id', 'page', 'evidence')) or not isinstance(g['evidence'], str) or not g['evidence']:
+                    raise ValueError(f"question {q['id']}: gold không hợp lệ")
+                if not any(hit(c, [g]) for c in chunks):
+                    raise ValueError(f"question {q['id']}: gold không nằm trọn trong chunk đúng nguồn/trang")
+        else:
+            if q.get('expected_behavior') != 'search_and_abstain' or not isinstance(q.get('absence_reason'), str) or not q['absence_reason'].strip():
+                raise ValueError(f"question {q['id']}: câu thiếu evidence cần expected_behavior và absence_reason")
 
 
 def hit(chunk, gold):
-    return any(chunk['source_id'] == g['source_id'] and chunk['page'] == g['page'] and g['evidence'] in chunk['text'] for g in gold)
+    normalized_text = ' '.join(chunk['text'].split())
+    return any(chunk['source_id'] == g['source_id'] and chunk['page'] == g['page']
+               and ' '.join(g['evidence'].split()) in normalized_text for g in gold)
 
 
 class TfidfIndex:
@@ -94,10 +103,12 @@ def evaluate(index, questions, budget=800):
         results = index.search(q['question'], top_k=3)
         context, ids = pack_context(results, budget)
         elapsed_ms = (time.perf_counter() - start) * 1000
-        marked = [{**c, 'hit': hit(c, q['gold'])} for c in results]
+        answerable = q.get('answerable', True)
+        gold = q.get('gold', [])
+        marked = [{**c, 'hit': answerable and hit(c, gold)} for c in results]
         traces.append({'query_id': q['id'], 'split': q['split'], 'question': q['question'],
                        'strategy': 'tfidf', 'top_k': 3, 'budget_chars': budget,
-                       'gold': q['gold'], 'results': marked, 'context': context, 'context_ids': ids,
+                       'answerable': answerable, 'gold': gold, 'results': marked, 'context': context, 'context_ids': ids,
                        'context_chars': len(context), 'elapsed_ms': elapsed_ms,
                        'hit1': bool(marked and marked[0]['hit']),
                        'hit3': any(c['hit'] for c in marked),
@@ -121,9 +132,13 @@ def main():
     index = TfidfIndex(chunks)
     index_seconds = time.perf_counter() - started
     traces = evaluate(index, selected)
+    answerable = [t for t in traces if t['answerable']]
+    n_answerable = len(answerable)
     summary = {'strategy': 'tfidf', 'split': args.split, 'n': len(traces),
-               'hit1': sum(t['hit1'] for t in traces), 'hit3': sum(t['hit3'] for t in traces),
-               'context_hit': sum(t['context_hit'] for t in traces),
+               'n_answerable': n_answerable, 'n_unanswerable': len(traces) - n_answerable,
+               'hit1': sum(t['hit1'] for t in answerable), 'hit1_rate': sum(t['hit1'] for t in answerable) / n_answerable if n_answerable else 0.0,
+               'hit3': sum(t['hit3'] for t in answerable), 'hit3_rate': sum(t['hit3'] for t in answerable) / n_answerable if n_answerable else 0.0,
+               'context_hit': sum(t['context_hit'] for t in answerable), 'context_evidence_rate': sum(t['context_hit'] for t in answerable) / n_answerable if n_answerable else 0.0,
                'avg_context_chars': statistics.mean(t['context_chars'] for t in traces),
                'median_ms': statistics.median(t['elapsed_ms'] for t in traces),
                'index_seconds': index_seconds, 'service_cost_usd': 0}

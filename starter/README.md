@@ -45,6 +45,22 @@ Thay phần trong `< >` bằng đường dẫn thật. Script chỉ đổi tên 
 
 `--split dev` chỉ chấm dev. Sau khi chốt cấu hình, dùng `--split test` và chọn thư mục kết quả khác. Nếu test Day 6 từng dùng để chỉnh hệ thống, tạo test mới theo [GUIDE.md](../GUIDE.md). Baseline mẫu dùng evidence nằm trong một chunk và context từ top-3; cần mở rộng hoặc tự đánh giá nếu dùng multi-hop, context từ nhiều lượt hay schema khác. Khớp nguyên văn bằng code không thay thế đánh giá thủ công.
 
+Benchmark thật đã chuẩn bị ở [`data/benchmark_questions.json`](../data/benchmark_questions.json), gồm cả câu thiếu evidence. Baseline chỉ tính Hit@1, Hit@3 và Context Evidence Rate trên câu `answerable: true`; câu unanswerable vẫn được giữ trong trace nhưng không tính vào mẫu số retrieval. Chạy baseline với file chunks Day 6 đã xuất sang schema Day 7:
+
+```bash
+python starter/baseline.py --chunks <day6_strategy_b_chunks.json> --questions data/benchmark_questions.json --split dev --output starter/results/dev-tfidf
+```
+
+`data/agent_cases.json` là danh sách câu hỏi/nhãn dùng cho chấm agent; không truyền `benchmark_questions.json` hoặc gold vào Gemini/retriever.
+
+Chạy agent thật cho một split, chỉ nạp `agent_cases.json` (không chứa đáp án vàng):
+
+```bash
+python starter/run_agent.py --cases data/agent_cases.json --split dev --output starter/results/agent-dev-traces.json
+```
+
+Sau khi chọn cấu hình trên dev, lặp lại với `--split test` và output path khác để giữ test held-out.
+
 ## 4. Tổng hợp đánh giá agent
 
 Sau khi chạy agent thật và tự chấm, chuẩn bị ba JSON array:

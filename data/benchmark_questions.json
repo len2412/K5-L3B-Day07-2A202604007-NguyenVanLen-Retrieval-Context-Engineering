@@ -1,0 +1,194 @@
+[
+  {
+    "id": "d01",
+    "split": "dev",
+    "answerable": true,
+    "question": "What does version control let you do with versions of a file over time?",
+    "expected_answer": "It records changes to files over time so you can recall specific versions later.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 10, "evidence": "a system that records changes to a file or set of files over time so that you can recall specific versions later"}]
+  },
+  {
+    "id": "d02",
+    "split": "dev",
+    "answerable": true,
+    "question": "In a distributed version control system, what does each clone represent?",
+    "expected_answer": "Each clone is a full backup of all the repository data.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 12, "evidence": "Every clone is really a full backup of all the data."}]
+  },
+  {
+    "id": "d03",
+    "split": "dev",
+    "answerable": true,
+    "question": "What happened to BitKeeper's free-of-charge status in 2005?",
+    "expected_answer": "The relationship with BitKeeper's developer broke down and BitKeeper's free-of-charge status was revoked.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 14, "evidence": "the tool’s free-of-charge status was revoked."}]
+  },
+  {
+    "id": "d04",
+    "split": "dev",
+    "answerable": true,
+    "question": "What initial branch name does Git create by default with git init, according to the text?",
+    "expected_answer": "master",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 23, "evidence": "By default Git will create a branch called master when you create a new repository with git init."}]
+  },
+  {
+    "id": "d05",
+    "split": "dev",
+    "answerable": true,
+    "question": "What does git init create inside the project?",
+    "expected_answer": "A .git subdirectory containing the repository files.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 26, "evidence": "This creates a new subdirectory named .git that contains all of your necessary repository files"}]
+  },
+  {
+    "id": "d06",
+    "split": "dev",
+    "answerable": true,
+    "question": "What does git clone download by default about a repository's files?",
+    "expected_answer": "It downloads every version of every file in the project history by default.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 27, "evidence": "Every version of every file for the history of the project is pulled down by default when you run git clone."}]
+  },
+  {
+    "id": "d07",
+    "split": "dev",
+    "answerable": true,
+    "question": "Which command does the book identify as the main tool for checking the state of files?",
+    "expected_answer": "git status",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 28, "evidence": "The main tool you use to determine which files are in which state is the git status command."}]
+  },
+  {
+    "id": "d08",
+    "split": "dev",
+    "answerable": true,
+    "question": "What makes a file untracked in Git?",
+    "expected_answer": "It was not in the previous commit snapshot and has not yet been staged.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 29, "evidence": "Git sees a file you didn’t have in the previous snapshot (commit), and which hasn’t yet been staged"}]
+  },
+  {
+    "id": "d09",
+    "split": "dev",
+    "answerable": true,
+    "question": "When git add is given a directory, what does it add?",
+    "expected_answer": "It adds all files in that directory recursively.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 30, "evidence": "if it’s a directory, the command adds all the files in that directory recursively."}]
+  },
+  {
+    "id": "d10",
+    "split": "dev",
+    "answerable": true,
+    "question": "If you edit a file after running git add, which version goes into the next commit unless you stage it again?",
+    "expected_answer": "The version as it was when git add was last run, not the later working-directory version.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 31, "evidence": "Git stages a file exactly as it is when you run the git add command."}]
+  },
+  {
+    "id": "d11",
+    "split": "dev",
+    "answerable": true,
+    "question": "What does git diff show about changes?",
+    "expected_answer": "It shows the exact lines added and removed.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 33, "evidence": "git diff shows you the exact lines added and removed"}]
+  },
+  {
+    "id": "d12",
+    "split": "dev",
+    "answerable": true,
+    "question": "What does git rm do to a tracked file?",
+    "expected_answer": "It removes the file from the staging/tracked area and from the working directory.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 38, "evidence": "The git rm command does that, and also removes the file from your working directory"}]
+  },
+  {
+    "id": "d13",
+    "split": "dev",
+    "answerable": true,
+    "question": "What is git log used for in the basic example?",
+    "expected_answer": "Looking back at the commit history to see what happened.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 40, "evidence": "After you have created several commits, or if you have cloned a repository with an existing commit history, you’ll probably want to look back to see what has happened. The most basic and powerful tool to do this is the git log command."}]
+  },
+  {
+    "id": "d14",
+    "split": "dev",
+    "answerable": true,
+    "question": "What happens if you run git commit --amend immediately after the previous commit without making changes?",
+    "expected_answer": "The snapshot remains the same and only the commit message changes.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 46, "evidence": "then your snapshot will look exactly the same, and all you’ll change is your commit message."}]
+  },
+  {
+    "id": "d15",
+    "split": "dev",
+    "answerable": true,
+    "question": "How can you configure main as the default initial branch name for new repositories?",
+    "expected_answer": "Run git config --global init.defaultBranch main.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 23, "evidence": "To set main as the default branch name do: $ git config --global init.defaultBranch main"}]
+  },
+  {
+    "id": "d16",
+    "split": "dev",
+    "answerable": false,
+    "expected_behavior": "search_and_abstain",
+    "question": "How does the git bisect command use binary search to identify the commit that introduced a bug?",
+    "absence_reason": "The indexed corpus contains only Pro Git chapters 1–3. A full git bisect workflow is not present in the extracted pages or Day 6 index."
+  },
+  {
+    "id": "d17",
+    "split": "dev",
+    "answerable": false,
+    "expected_behavior": "search_and_abstain",
+    "question": "What command and options create a second working tree for a branch while leaving the current checkout in place?",
+    "absence_reason": "The indexed corpus covers chapters 1–3 only and does not document git worktree or multiple working trees."
+  },
+  {
+    "id": "t01",
+    "split": "test",
+    "answerable": true,
+    "question": "What is a branch in Git, according to the book?",
+    "expected_answer": "A lightweight movable pointer to a commit.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 64, "evidence": "A branch in Git is simply a lightweight movable pointer to one of these commits."}]
+  },
+  {
+    "id": "t02",
+    "split": "test",
+    "answerable": true,
+    "question": "What does HEAD point to in Git?",
+    "expected_answer": "The local branch currently checked out.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 65, "evidence": "In Git, this is a pointer to the local branch you’re currently on."}]
+  },
+  {
+    "id": "t03",
+    "split": "test",
+    "answerable": true,
+    "question": "When can Git perform a fast-forward merge, and what does it do?",
+    "expected_answer": "When the target commit is reachable from the current commit's history with no divergent work, Git moves the branch pointer forward.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 73, "evidence": "when you try to merge one commit with a commit that can be reached by following the first commit’s history, Git simplifies things by moving the pointer forward because there is no divergent work to merge together"}]
+  },
+  {
+    "id": "t04",
+    "split": "test",
+    "answerable": true,
+    "question": "How does Git integrate diverged histories in the non-fast-forward merge example?",
+    "expected_answer": "It performs a three-way merge.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 75, "evidence": "Git does a simple three-way merge"}]
+  },
+  {
+    "id": "t05",
+    "split": "test",
+    "answerable": true,
+    "question": "What situation causes Git to report a merge conflict in the basic example?",
+    "expected_answer": "Both branches changed the same part of the same file differently, so Git cannot merge them cleanly.",
+    "gold": [{"source_id": "progit-v2-1-450", "page": 76, "evidence": "If you changed the same part of the same file differently in the two branches you’re merging, Git won’t be able to merge them cleanly."}]
+  },
+  {
+    "id": "t06",
+    "split": "test",
+    "answerable": false,
+    "expected_behavior": "search_and_abstain",
+    "question": "How do you add a Git submodule and configure it to follow the latest commit from its remote branch?",
+    "absence_reason": "The indexed corpus contains chapters 1–3 only and has no submodule setup or update instructions; the term submodule does not occur in the extracted corpus."
+  },
+  {
+    "id": "t07",
+    "split": "test",
+    "answerable": false,
+    "expected_behavior": "search_and_abstain",
+    "question": "What steps does Pro Git give for installing a pre-receive hook that rejects pushes containing a forbidden file?",
+    "absence_reason": "The extracted pages only mention server-side hooks in passing when discussing clone backups (page 27); they do not explain hook installation or pre-receive behavior."
+  }
+]

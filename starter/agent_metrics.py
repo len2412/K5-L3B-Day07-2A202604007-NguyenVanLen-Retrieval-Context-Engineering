@@ -77,7 +77,10 @@ def main():
     def load(path): return json.loads(path.read_text(encoding='utf-8'))
     cases = [c for c in load(args.cases) if c.get('split') == args.split]
     if not cases: raise ValueError('không có case trong split')
-    report = {'split': args.split, **aggregate(cases, load(args.traces), load(args.reviews))}
+    trace_data = load(args.traces)
+    traces = trace_data.get('traces') if isinstance(trace_data, dict) else trace_data
+    if not isinstance(traces, list): raise ValueError('traces phải là JSON array hoặc object có thuộc tính traces')
+    report = {'split': args.split, **aggregate(cases, traces, load(args.reviews))}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, ensure_ascii=False, indent=2))
