@@ -7,6 +7,7 @@
 | `convert_day6.py` | Chuyển một số trường JSON từ Day 6 |
 | `agent_metrics.py` | Tổng hợp nhãn đánh giá do bạn tự chấm |
 | `day6_retriever.py` | Dense query vào PostgreSQL/pgvector Day 6, strategy B |
+| `compare_retrieval.py` | So sánh dense B, TF-IDF và dense + BGE reranker trên cùng split |
 | `gemini_controller.py` | Gemini API controller trả action search/answer dạng JSON |
 | `run_agent.py` | Chạy agent thật và lưu trace JSON tùy chọn |
 
@@ -59,7 +60,25 @@ Chạy agent thật cho một split, chỉ nạp `agent_cases.json` (không ch�
 python starter/run_agent.py --cases data/agent_cases.json --split dev --output starter/results/agent-dev-traces.json
 ```
 
+Lệnh này tự tạo `starter/results/agent-dev-traces-summary.json` cạnh trace. Summary gồm số câu answered/abstain/error, số lượt retrieval, latency và citation counts. Đây là summary vận hành; answer grade và citation support vẫn cần chấm thủ công. Có thể đổi đường dẫn bằng `--summary-output`. Nếu bạn đã có trace từ lần chạy trước, tạo summary mà không gọi lại Gemini:
+
+```bash
+python starter/summarize_run.py --cases data/agent_cases.json --traces starter/results/agent-dev-traces.json --split dev
+```
+
 Sau khi chọn cấu hình trên dev, lặp lại với `--split test` và output path khác để giữ test held-out.
+
+## 6. So sánh ba phương pháp retrieval
+
+`compare_retrieval.py` benchmark ba phương pháp khác nhau trên cùng bộ câu answerable của split: dense search với Day 6 strategy B, TF-IDF lexical, và dense top-20 rồi xếp hạng lại bằng CrossEncoder `BAAI/bge-reranker-base` (top-3 cuối). Reranker cần có trong Hugging Face cache. Script tái tạo chunk B từ PDF/manifest Day 6 cho TF-IDF; dense search tiếp tục dùng index PostgreSQL Day 6.
+
+Chạy trên dev từ thư mục project Day 7:
+
+```bash
+python starter/compare_retrieval.py --split dev --questions data/benchmark_questions.json --output starter/results/retrieval-dev
+```
+
+`comparison.json` báo Hit@1, Evidence Hit@3, Context Evidence Rate, latency mỗi query, thời gian khởi tạo index/model và cấu hình. Mỗi method cũng có trace riêng. Mặc định giữ `top_k=3`, context budget 3500 ký tự, rerank candidates top-20. Chốt cấu hình bằng dev trước khi chạy test sang thư mục output riêng. So sánh này chấm retrieval/context; chất lượng câu trả lời và citation agent vẫn cần review thủ công.
 
 ## 4. Tổng hợp đánh giá agent
 

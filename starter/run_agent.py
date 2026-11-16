@@ -10,6 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from agentic import run_agent
+from agent_run_summary import summarize_batch
 from day6_retriever import DAY6_STARTER, Day6DenseRetriever
 from gemini_controller import GeminiController
 
@@ -23,6 +24,10 @@ def main() -> None:
     parser.add_argument("--budget", type=int, default=3500, help="Maximum context characters")
     parser.add_argument("--max-searches", type=int, default=3)
     parser.add_argument("--output", type=Path, help="Optional path to save the full JSON trace")
+    parser.add_argument("--summary-output", type=Path,
+                        help="Optional batch summary path; defaults beside --output")
+    parser.add_argument("--delay", type=float, default=8.0,
+                    help="Seconds to sleep after each case (helps avoid rate limits)")
     args = parser.parse_args()
     if bool(args.question) == bool(args.cases):
         parser.error("provide exactly one question or --cases")
@@ -45,6 +50,10 @@ def main() -> None:
         selected = [case for case in cases if case.get("split") == args.split]
         if not selected:
             raise ValueError(f"No cases in split {args.split!r}: {args.cases}")
+        if len({case.get("id") for case in selected}) != len(selected):
+            raise ValueError("Case IDs must be unique within the selected split")
+        if any(not isinstance(case.get("answerable"), bool) for case in selected):
+            raise ValueError("Every selected case must include an answerable boolean")
         traces = []
         for case in selected:
             query_id, question = case.get("id"), case.get("question")
@@ -67,7 +76,13 @@ def main() -> None:
             trace["split"] = args.split
             trace["elapsed_ms"] = (time.perf_counter() - started) * 1000
             traces.append(trace)
-        result = {"split": args.split, "retrieval_config": config, "traces": traces}
+            if args.delay > 0:
+                time.sleep(args.delay)
+        run_config = {"top_k": args.top_k, "context_budget_chars": args.budget,
+                      "max_searches": args.max_searches, "delay_seconds": args.delay}
+        result = {"split": args.split, "retrieval_config": config,
+                  "run_config": run_config, "traces": traces}
+        summary = summarize_batch(selected, traces, config, args.split, run_config)
     else:
         result = run_agent(
             args.question,
@@ -83,6 +98,11 @@ def main() -> None:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered + "\n", encoding="utf-8")
+    if args.cases:
+        summary_path = args.summary_output or args.output.with_name(f"{args.output.stem}-summary.json")
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"Run summary saved to: {summary_path}")
 
 
 if __name__ == "__main__":
