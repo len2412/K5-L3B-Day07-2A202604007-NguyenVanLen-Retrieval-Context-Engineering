@@ -1,4 +1,4 @@
-"""Run a question or an agent_cases split with Gemini and Day 6 strategy B."""
+"""Run a question or an agent_cases split with OpenRouter and Day 6 strategy B."""
 from __future__ import annotations
 
 import argparse
@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from agentic import run_agent
 from agent_run_summary import summarize_batch
 from day6_retriever import DAY6_STARTER, Day6DenseRetriever
-from gemini_controller import GeminiController
+from openrouter_controller import OpenRouterController
 
 
 def main() -> None:
@@ -34,16 +34,20 @@ def main() -> None:
     if args.cases and not args.output:
         parser.error("--output is required with --cases")
 
-    load_dotenv(DAY6_STARTER / ".env", override=False)
+    # Load Day 7 settings first so an empty optional key in Day 6's .env does
+    # not mask the OpenRouter key configured for this agent. Existing process
+    # environment variables still take precedence over both files.
     load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
+    load_dotenv(DAY6_STARTER / ".env", override=False)
     retriever = Day6DenseRetriever()
-    controller = GeminiController()
+    controller = OpenRouterController()
     config = {
         "strategy": "B",
         "embedding_model": retriever.model_name,
         "embedding_dimensions": retriever.embedder.dimensions,
         "vector_store": "PostgreSQL + pgvector / ingestion_chunks",
-        "gemini_model": controller.model,
+        "agent_provider": "OpenRouter",
+        "agent_model": controller.model,
     }
     if args.cases:
         cases = json.loads(args.cases.read_text(encoding="utf-8"))

@@ -46,6 +46,12 @@ def run_agent(question: str, controller: Controller, retriever: Retriever, *,
     # Allow one controller turn to repair a citation-format mistake.
     for _ in range(max_searches + 2):
         action = controller.decide(question, history)
+        provider = action.pop('_provider', None)
+        model = action.pop('_model', None)
+        usage = action.pop('_usage', None)
+        if provider:
+            events.append({'event': 'llm_call', 'provider': provider,
+                           'model': model, 'usage': usage})
         if action.get('action') == 'search':
             if sum(e['event'] == 'search' for e in events) >= max_searches:
                 return {'status': 'abstain', 'answer': 'Không đủ bằng chứng để trả lời.', 'citations': [], 'events': events + [{'event': 'search_limit'}]}

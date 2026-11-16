@@ -25,6 +25,12 @@ def summarize_batch(cases: list[dict], traces: list[dict], config: dict | None =
 
     durations = [float(trace["elapsed_ms"]) for trace in traces if trace.get("elapsed_ms") is not None]
     total_citations = sum(len(trace.get("citations", [])) for trace in traces)
+    llm_calls = [event for trace in traces for event in trace.get("events", [])
+                 if event.get("event") == "llm_call"]
+    reported_costs = [event["usage"].get("cost") if isinstance(event.get("usage"), dict) else None
+                      for event in llm_calls]
+    cost_usd = (sum(reported_costs) if llm_calls
+                and all(isinstance(cost, (int, float)) for cost in reported_costs) else None)
     cases_with_search = sum(count > 0 for count in searches)
     return {
         "split": split,
@@ -54,6 +60,6 @@ def summarize_batch(cases: list[dict], traces: list[dict], config: dict | None =
         },
         "error_case_ids": [trace.get("query_id") for trace in traces if trace.get("status") == "error"],
         "quality_note": "Answer grades and semantic citation support require review labels; they are not inferred by this run summary.",
-        "cost_usd": None,
-        "cost_note": "Gemini API cost is not measured by this runner; record it from provider usage/billing if needed.",
+        "cost_usd": cost_usd,
+        "cost_note": ("Sum of OpenRouter-reported usage.cost values. Null means one or more calls did not include cost; reconcile with OpenRouter Activity."),
     }
