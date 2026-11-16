@@ -6,6 +6,9 @@
 | `baseline.py` | TF-IDF lexical baseline, chạy offline |
 | `convert_day6.py` | Chuyển một số trường JSON từ Day 6 |
 | `agent_metrics.py` | Tổng hợp nhãn đánh giá do bạn tự chấm |
+| `day6_retriever.py` | Dense query vào PostgreSQL/pgvector Day 6, strategy B |
+| `gemini_controller.py` | Gemini API controller trả action search/answer dạng JSON |
+| `run_agent.py` | Chạy agent thật và lưu trace JSON tùy chọn |
 
 Starter **chưa phải solution hoàn chỉnh**. Bạn phải nối model và vector store thật, triển khai ít nhất 3 phương pháp retrieval do bạn chọn, gồm dense trên vector store Day 6. Mock chỉ dùng để test code.
 
@@ -55,6 +58,21 @@ python3 starter/agent_metrics.py --cases <cases.json> --traces <traces.json> --r
 ```
 
 Thay đường dẫn trong `< >`. Script tổng hợp nhãn bạn đã chấm, không tự đánh giá nội dung. Mẫu số bằng 0 nghĩa là không áp dụng. Lỗi kết nối được báo riêng, không tính vào chất lượng; giữ trace và nhãn để đối chiếu.
+
+## 5. Kết nối Day 6 strategy B + Gemini
+
+Adapter đã cấu hình strategy `B` và tái sử dụng `BAAI/bge-large-en-v1.5` (1024 chiều) để tạo query embedding. Model index đọc từ `DAY6_INDEX_EMBEDDING_MODEL`, tách biệt với `EMBEDDING_MODEL` dùng cho cấu hình ingest Day 6. Nó truy vấn bảng `ingestion_chunks` trong database Day 6 và chuyển `chunk_id`, `document_id`, nguồn, trang, metadata cùng score sang schema Day 7. Strategy B phải được ingest vào database trước; adapter không tự nạp lại hoặc tạo index.
+
+1. Cài dependencies Day 6 trong cùng Python environment: `python -m pip install -r <đường-dẫn-Day6>/starter/requirements.txt`.
+2. Khởi động PostgreSQL Day 6 (`docker compose -p day6_student_starter up -d --wait`) từ thư mục Day 6 `starter/`, rồi xác nhận `.env` ở đó có `DATABASE_URL` đúng.
+3. Sao chép `.env.example` thành `.env` trong thư mục Day 7 `starter/`, điền `GEMINI_API_KEY` và chọn model bằng `GEMINI_MODEL`. Để đổi embedding query, chỉ sửa `DAY6_INDEX_EMBEDDING_MODEL` khi xác nhận index B đã được tạo bằng model đó. Không commit `.env`.
+4. Chạy từ thư mục Day 7 `starter/`:
+
+```bash
+python run_agent.py "What does Git say about branching?" --top-k 3 --budget 3500 --output results/one-query.json
+```
+
+Mặc định adapter tìm repo Day 6 bên cạnh repo Day 7. Nếu đặt ở nơi khác, đặt `DAY6_STARTER` trỏ tới thư mục `starter/` của Day 6. Gemini chỉ điều phối và trả lời; không thay embedding model. Với model mặc định, adapter kiểm tra vector có 1024 chiều như index đã ghi nhận. `run_agent.py` lưu tool calls, retrieved chunks, context và citations để dùng làm trace; hãy tự review citation support theo benchmark.
 
 ## Lưu ý
 
